@@ -9,6 +9,7 @@ import skosboss.poolparty.api.operations.AddCustomRelation;
 import skosboss.poolparty.api.operations.AddLiteral;
 import skosboss.poolparty.api.operations.ApplyType;
 import skosboss.poolparty.api.operations.CreateConcept;
+import skosboss.poolparty.api.operations.CreateConceptScheme;
 import skosboss.poolparty.api.operations.DeleteConcept;
 import skosboss.poolparty.api.operations.Import;
 import skosboss.poolparty.api.operations.Op;
@@ -57,13 +58,21 @@ public class Api {
 		execute(new ApplyType(project, resource, type, propagate));
 	}
 	
+	public String createConceptScheme(String title) {
+		String uri = execute(new CreateConceptScheme(project, title));
+		return unquote(uri);
+	}
+	
 	public String createConcept(String parentUri, String prefLabel) {
 		String uri = execute(new CreateConcept(project, parentUri, prefLabel));
-		
-		// returned uri in the response body is quoted, so unquote
-		if (uri.startsWith("\"")) uri = uri.substring(1);
-		if (uri.endsWith("\"")) uri = uri.substring(0, uri.length() - 1);
-		return uri;
+		return unquote(uri);
+	}
+	
+	// unquotes URIs returned by various calls
+	private String unquote(String str) {
+		if (str.startsWith("\"")) str = str.substring(1);
+		if (str.endsWith("\"")) str = str.substring(0, str.length() - 1);
+		return str;
 	}
 	
 	public void deleteConcept(String concept) {
