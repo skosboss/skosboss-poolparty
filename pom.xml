@@ -11,6 +11,7 @@
 	<url>https://github.com/skosboss/skosboss-poolparty</url>
 
 	<modules>
+		<module>skosboss-poolparty-api</module>
 		<module>skosboss-poolparty-server</module>
 	</modules>
 
