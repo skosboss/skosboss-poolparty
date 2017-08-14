@@ -1,0 +1,66 @@
+{
+  "skos" : "http://www.w3.org/2004/02/skos/core#",
+  "hydra" : "http://www.w3.org/ns/hydra/core#",
+  "skos-api" : "http://skos-api.org/metamodel#",
+  "uri" : "@id",
+  "prefLabel" : "skos:prefLabel",
+  "topConceptOf" : "skos:topConceptOf",
+  "altLabels" : {
+    "@id" : "skos:altLabel",
+    "@container" : "@set"
+  },
+  "hiddenLabels" : {
+    "@id" : "skos:hiddenLabel",
+    "@container" : "@set"
+  },
+  "definitions" : {
+    "@id" : "skos:definition",
+    "@container" : "@set"
+  },
+  "broaders" : {
+    "@id" : "skos:broader",
+    "@type" : "@id",
+    "@container" : "@set"
+  },
+  "narrowers" : {
+    "@id" : "skos:narrower",
+    "@type" : "@id",
+    "@container" : "@set"
+  },
+  "relateds" : {
+    "@id" : "skos:related",
+    "@type" : "@id",
+    "@container" : "@set"
+  },
+  "conceptSchemes" : {
+    "@id" : "skos:inScheme",
+    "@type" : "@id",
+    "@container" : "@set"
+  },
+  "notation" : "skos:notation",
+  "examples" : {
+    "@id" : "skos:example",
+    "@container" : "@set"
+  },
+  "scopeNotes" : {
+    "@id" : "skos:scopeNotes",
+    "@container" : "@set"
+  },
+  "exactMatch" : {
+    "@id" : "skos:exactMatch",
+    "@type" : "@id",
+    "@container" : "@set"
+  },
+  "closeMatch" : {
+    "@id" : "skos:closeMatch",
+    "@type" : "@id",
+    "@container" : "@set"
+  },
+  "relatedMatch" : {
+    "@id" : "skos:relatedMatch",
+    "@type" : "@id",
+    "@container" : "@set"
+  },
+  "title" : "skos-api:title",
+  "member": "hydra:member"
+}
