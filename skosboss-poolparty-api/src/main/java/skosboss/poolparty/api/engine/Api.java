@@ -11,6 +11,10 @@ import skosboss.poolparty.api.operations.ApplyType;
 import skosboss.poolparty.api.operations.CreateConcept;
 import skosboss.poolparty.api.operations.CreateConceptScheme;
 import skosboss.poolparty.api.operations.DeleteConcept;
+import skosboss.poolparty.api.operations.GetChildConcepts;
+import skosboss.poolparty.api.operations.GetCompleteConcept;
+import skosboss.poolparty.api.operations.GetConceptSchemes;
+import skosboss.poolparty.api.operations.GetTopConcepts;
 import skosboss.poolparty.api.operations.Import;
 import skosboss.poolparty.api.operations.Op;
 import skosboss.poolparty.api.operations.PoolPartyConcept;
@@ -89,6 +93,22 @@ public class Api {
 			.forEach(this::deleteConcept);
 	}
 	
+	public String getConceptSchemes() {
+		return execute(new GetConceptSchemes(project));
+	}
+
+	public String getTopConcepts(String scheme, String properties) {
+		return execute(new GetTopConcepts(project, scheme, properties));
+	}
+
+	public String getChildConcepts(String parent, String properties) {
+		return execute(new GetChildConcepts(project, parent, properties));
+	}
+
+	public String getCompleteConcept(String concept, String properties) {
+		return execute(new GetCompleteConcept(project, concept, properties));
+	}
+
 	public void importData(boolean overwrite, String importModule, String contentType, String body) {
 		execute(new Import(project, overwrite, importModule, contentType, body));
 	}
