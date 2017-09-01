@@ -279,9 +279,13 @@ public class ThesaurusService {
 		
 		targetTriples = 
 				model.stream()
-					.filter(s -> s.getPredicate().equals(RDF.TYPE) && 
+					.filter(s -> 
+						s.getPredicate().equals(RDF.TYPE) && 
+						(
 							s.getObject().equals(SKOS.CONCEPT) || 
-							s.getObject().equals(SKOS.CONCEPT_SCHEME))
+							s.getObject().equals(SKOS.CONCEPT_SCHEME)
+						)
+					)
 					.collect(Collectors.toSet());
 		targetTriples.forEach(s -> 
 			model.add(
