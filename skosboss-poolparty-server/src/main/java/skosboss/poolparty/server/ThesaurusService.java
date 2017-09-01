@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.ws.rs.GET;
@@ -16,22 +17,27 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Namespace;
 import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
 import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
+import org.eclipse.rdf4j.model.impl.SimpleNamespace;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.impl.TreeModel;
 import org.eclipse.rdf4j.model.util.ModelBuilder;
 import org.eclipse.rdf4j.model.vocabulary.RDF;
+import org.eclipse.rdf4j.model.vocabulary.RDFS;
 import org.eclipse.rdf4j.model.vocabulary.SKOS;
 import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFParseException;
 import org.eclipse.rdf4j.rio.Rio;
 import org.eclipse.rdf4j.rio.UnsupportedRDFormatException;
+import org.eclipse.rdf4j.rio.WriterConfig;
+import org.eclipse.rdf4j.rio.helpers.BasicWriterSettings;
 import skosboss.poolparty.api.engine.Api;
 import skosboss.poolparty.api.operations.JsonLdContextifier;
 
@@ -52,14 +58,18 @@ public class ThesaurusService {
 	private static class SkosApi {
 		
 		static IRI iri(String value) {
-			return f.createIRI(namespace + value);
+			return f.createIRI(NAMESPACE + value);
 		}
 		
-		static final String prefix = "skos-api";
+		static final String PREFIX = "skos-api";
 		
-		static final String namespace = "http://skos-api.org/metamodel#";
+		static final String NAMESPACE = "http://skos-api.org/metamodel#";
+		
+		static final Namespace NS =  new SimpleNamespace(PREFIX, NAMESPACE);
 		
 		static IRI uri = iri("uri");
+		
+		static IRI parent = iri("parent");
 		
 	}
 	
@@ -73,6 +83,8 @@ public class ThesaurusService {
 		static final String PREFIX = "hydra";
 
 		static final String NAMESPACE = "http://www.w3.org/ns/hydra/core#";
+		
+		static final Namespace NS =  new SimpleNamespace(PREFIX, NAMESPACE);
 
 		static IRI member = iri("member");
 
@@ -104,7 +116,7 @@ public class ThesaurusService {
 			.build();
 		
 		model.setNamespace(SKOS.PREFIX, SKOS.NAMESPACE);
-		model.setNamespace(SkosApi.prefix, SkosApi.namespace);
+		model.setNamespace(SkosApi.PREFIX, SkosApi.NAMESPACE);
 		
 		return asTurtle(model);
 	}
@@ -216,14 +228,12 @@ public class ThesaurusService {
 		Model memberStatements = model.filter(null, Hydra.member, null);
 		Resource collectionResource = Iterables.getOnlyElement(memberStatements.subjects());
 		model.add(collectionResource, RDF.TYPE, Hydra.collection);
+		model.add(collectionResource, RDF.TYPE, RDFS.RESOURCE);
 
 		for (Value cs : memberStatements.objects()) {
 			model.add((Resource) cs, RDF.TYPE, resourceClass);
+			model.add((Resource) cs, RDF.TYPE, RDFS.RESOURCE);
 		}
-
-		model.setNamespace(SKOS.PREFIX, SKOS.NAMESPACE);
-		model.setNamespace(SkosApi.prefix, SkosApi.namespace);
-		model.setNamespace(Hydra.PREFIX, Hydra.NAMESPACE);
 
 		return asTurtle(model);
 	}
@@ -231,10 +241,7 @@ public class ThesaurusService {
 	private String processResource(IRI resourceClass, JsonNode jsonLd, Model model) {
 		Resource subjectResource = Iterables.getOnlyElement(model.subjects());
 		model.add(subjectResource, RDF.TYPE, resourceClass);
-
-		model.setNamespace(SKOS.PREFIX, SKOS.NAMESPACE);
-		model.setNamespace(SkosApi.prefix, SkosApi.namespace);
-		model.setNamespace(Hydra.PREFIX, Hydra.NAMESPACE);
+		model.add(subjectResource, RDF.TYPE, RDFS.RESOURCE);
 
 		return asTurtle(model);
 	}
@@ -244,11 +251,46 @@ public class ThesaurusService {
 	}
 
 	private String asTurtle(Model model) {
+		skosApiInference(model);
+		
 		Model sorted = 
 			model.stream()
 				.collect(Collectors.toCollection(TreeModel::new));
+		sorted.setNamespace(RDFS.NS);
+		sorted.setNamespace(SKOS.NS);
+		sorted.setNamespace(Hydra.NS);
+		sorted.setNamespace(SkosApi.NS);
+		
 		StringWriter writer = new StringWriter();
-		Rio.write(sorted, writer, RDFFormat.TURTLE);
+		WriterConfig config = new WriterConfig();
+		config.set(BasicWriterSettings.PRETTY_PRINT, true);
+		Rio.write(sorted, writer, RDFFormat.TURTLE, config);
 		return writer.toString();
+	}
+	
+	private void skosApiInference(Model model) {
+		Set<Statement> targetTriples = 
+			model.stream()
+				.filter(s -> s.getPredicate().equals(SKOS.BROADER) || 
+						s.getPredicate().equals(SKOS.TOP_CONCEPT_OF))
+				.collect(Collectors.toSet());
+		targetTriples.forEach(s -> 
+			model.add(s.getSubject(), SkosApi.parent, s.getObject(), s.getContext()));
+		
+		targetTriples = 
+				model.stream()
+					.filter(s -> s.getPredicate().equals(RDF.TYPE) && 
+							s.getObject().equals(SKOS.CONCEPT) || 
+							s.getObject().equals(SKOS.CONCEPT_SCHEME))
+					.collect(Collectors.toSet());
+		targetTriples.forEach(s -> 
+			model.add(
+				s.getSubject(), 
+				SkosApi.uri, 
+				f.createLiteral(s.getSubject().stringValue()), 
+				s.getContext()
+			)
+		);
+
 	}
 }
