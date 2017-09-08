@@ -112,13 +112,52 @@ public class ThesaurusService {
 		Model model = new ModelBuilder()
 			.subject(uri)
 			.add(RDF.TYPE, SKOS.CONCEPT_SCHEME)
-			.add(SkosApi.uri, uri)
 			.build();
 		
 		model.setNamespace(SKOS.PREFIX, SKOS.NAMESPACE);
 		model.setNamespace(SkosApi.PREFIX, SkosApi.NAMESPACE);
 		
 		return asTurtle(model);
+	}
+	
+	@POST
+	@Path("{projectId}/createConcept")
+	@Produces("text/turtle")
+	public String createConcept(
+		@PathParam("projectId") String projectId,
+		@QueryParam("parent") String parentUri,
+		@QueryParam("prefLabel") String prefLabel,
+		@HeaderParam("Authorization") String basicAuth
+	) {
+		
+		String uriString =
+			api(projectId, basicAuth)
+				.createConcept(parentUri, prefLabel);
+		IRI uri = f.createIRI(uriString);
+		
+		Model model = new ModelBuilder()
+			.subject(uri)
+			.add(RDF.TYPE, SKOS.CONCEPT)
+			.build();
+		
+		model.setNamespace(SKOS.PREFIX, SKOS.NAMESPACE);
+		model.setNamespace(SkosApi.PREFIX, SkosApi.NAMESPACE);
+		
+		return asTurtle(model);
+	}
+	
+	@POST
+	@Path("{projectId}/addLiteral")
+	@Produces("text/turtle")
+	public void addLiteral(
+		@PathParam("projectId") String projectId,
+		@QueryParam("concept") String concept,
+		@QueryParam("label") String label,
+		@QueryParam("property") String property,
+		@HeaderParam("Authorization") String basicAuth
+	) {
+		api(projectId, basicAuth)
+				.addLiteral(concept, label, property);
 	}
 	
 	@GET
